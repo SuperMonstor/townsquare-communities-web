@@ -1,5 +1,9 @@
 function Topbar() {
-	return <div>Topbar</div>
+  return (
+    <nav className="topbar">
+
+    </nav>
+  )
 }
 
 export default Topbar
