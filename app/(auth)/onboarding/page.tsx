@@ -4,6 +4,7 @@ import React from "react"
 
 const Page = async () => {
 	const user = await currentUser()
+	if (!user) return null // to avoid typescript warnings
 
 	const userInfo = {}
 

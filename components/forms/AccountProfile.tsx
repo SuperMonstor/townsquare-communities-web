@@ -1,25 +1,29 @@
 "use client"
 
+import * as z from "zod"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
+import { usePathname, useRouter } from "next/navigation"
+import { ChangeEvent, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { UserValidation } from "@/lib/validations/user"
-import { Button } from "@/components/ui/button"
+
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { z } from "zod"
-import Image from "next/image"
-import { ChangeEvent, useState } from "react"
-import { Textarea } from "../ui/textarea"
-import { isBase64Image } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+
 import { useUploadThing } from "@/lib/uploadthing"
+import { isBase64Image } from "@/lib/utils"
+
+import { UserValidation } from "@/lib/validations/user"
+import { updateUser } from "@/lib/actions/user.actions"
 
 interface Props {
 	user: {
@@ -33,24 +37,55 @@ interface Props {
 	buttonTitle: string
 }
 
-function AccountProfile({ user, buttonTitle }: Props) {
-	const [files, setFiles] = useState<File[]>([])
+const AccountProfile = ({ user, buttonTitle: buttonTitle }: Props) => {
+	const router = useRouter()
+	const pathname = usePathname()
 	const { startUpload } = useUploadThing("media")
 
-	const form = useForm({
+	const [files, setFiles] = useState<File[]>([])
+
+	const form = useForm<z.infer<typeof UserValidation>>({
 		resolver: zodResolver(UserValidation),
 		defaultValues: {
-			profile_photo: user?.image || "",
-			name: user?.name || "",
-			username: user?.username || "",
-			bio: user?.bio || "",
+			profile_photo: user?.image ? user.image : "",
+			name: user?.name ? user.name : "",
+			username: user?.username ? user.username : "",
+			bio: user?.bio ? user.bio : "",
 		},
 	})
 
-	const handleImage = (
+	async function onSubmit(values: z.infer<typeof UserValidation>) {
+		const blob = values.profile_photo
+
+		const hasImageChanged = isBase64Image(blob)
+		if (hasImageChanged) {
+			const imgRes = await startUpload(files)
+
+			if (imgRes && imgRes[0].url) {
+				values.profile_photo = imgRes[0].url
+			}
+		}
+
+		await updateUser({
+			name: values.name,
+			path: pathname,
+			username: values.username,
+			userId: user.id,
+			bio: values.bio,
+			image: values.profile_photo,
+		})
+
+		if (pathname === "/profile/edit") {
+			router.back()
+		} else {
+			router.push("/")
+		}
+	}
+
+	function handleImage(
 		e: ChangeEvent<HTMLInputElement>,
-		fieldChange: (value: String) => void
-	) => {
+		fieldChange: (value: string) => void
+	) {
 		e.preventDefault()
 
 		const fileReader = new FileReader()
@@ -70,27 +105,11 @@ function AccountProfile({ user, buttonTitle }: Props) {
 		}
 	}
 
-	async function onSubmit(values: z.infer<typeof UserValidation>) {
-		const blob = values.profile_photo
-
-		const hasImageChanged = isBase64Image(blob)
-
-		if (hasImageChanged) {
-			const imgRes = await startUpload(files)
-
-			if (imgRes && imgRes[0].url) {
-				values.profile_photo = imgRes[0].url
-			}
-		}
-
-		// TODO Update user profile
-	}
-
 	return (
 		<Form {...form}>
 			<form
-				onSubmit={form.handleSubmit(onSubmit)}
 				className="flex flex-col justify-start gap-10"
+				onSubmit={form.handleSubmit(onSubmit)}
 			>
 				<FormField
 					control={form.control}
@@ -101,7 +120,7 @@ function AccountProfile({ user, buttonTitle }: Props) {
 								{field.value ? (
 									<Image
 										src={field.value}
-										alt="profile photo"
+										alt="profile_icon"
 										width={96}
 										height={96}
 										priority
@@ -110,7 +129,7 @@ function AccountProfile({ user, buttonTitle }: Props) {
 								) : (
 									<Image
 										src="/assets/profile.svg"
-										alt="profile photo"
+										alt="profile_icon"
 										width={24}
 										height={24}
 										className="object-contain"
@@ -121,21 +140,21 @@ function AccountProfile({ user, buttonTitle }: Props) {
 								<Input
 									type="file"
 									accept="image/*"
-									placeholder="Upload a photo"
+									placeholder="Add profile picture"
 									className="account-form_image-input"
 									onChange={(e) => handleImage(e, field.onChange)}
 								/>
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
-				{/* Name  */}
 				<FormField
 					control={form.control}
 					name="name"
 					render={({ field }) => (
-						<FormItem className="flex gap-3 flex-col w-full">
+						<FormItem className="flex w-full flex-col gap-3">
 							<FormLabel className="text-base-semibold text-light-2">
 								Name
 							</FormLabel>
@@ -146,16 +165,16 @@ function AccountProfile({ user, buttonTitle }: Props) {
 									{...field}
 								/>
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
-				{/* Username  */}
 				<FormField
 					control={form.control}
 					name="username"
 					render={({ field }) => (
-						<FormItem className="flex gap-3 flex-col w-full">
+						<FormItem className="flex w-full flex-col gap-3">
 							<FormLabel className="text-base-semibold text-light-2">
 								Username
 							</FormLabel>
@@ -166,16 +185,16 @@ function AccountProfile({ user, buttonTitle }: Props) {
 									{...field}
 								/>
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
-				{/* Bio */}
 				<FormField
 					control={form.control}
 					name="bio"
 					render={({ field }) => (
-						<FormItem className="flex gap-3 flex-col w-full">
+						<FormItem className="flex w-full flex-col gap-3">
 							<FormLabel className="text-base-semibold text-light-2">
 								Bio
 							</FormLabel>
@@ -186,12 +205,13 @@ function AccountProfile({ user, buttonTitle }: Props) {
 									{...field}
 								/>
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
 				<Button type="submit" className="bg-primary-500">
-					Submit
+					{buttonTitle}
 				</Button>
 			</form>
 		</Form>
