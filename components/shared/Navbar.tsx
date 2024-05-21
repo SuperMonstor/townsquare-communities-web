@@ -4,13 +4,13 @@ import { OrganizationSwitcher, SignOutButton, SignedIn } from "@clerk/nextjs"
 import { Organization } from "@clerk/nextjs/server"
 import { dark } from "@clerk/themes"
 
-function Topbar() {
+function Navbar() {
 	return (
 		<nav className="topbar">
 			<Link href="/" className="flex items-center gap-4">
 				<Image src="/assets/logo.png" alt="logo" width={28} height={28} />
 				<p className="text-heading3-bold text-light-1 max-xs:hidden">
-					Townsquare
+					Bengaluru Townsquare
 				</p>
 			</Link>
 
@@ -43,4 +43,4 @@ function Topbar() {
 	)
 }
 
-export default Topbar
+export default Navbar

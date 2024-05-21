@@ -14,7 +14,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form"
 import { Button } from "../ui/button"
-import { createThread } from "@/lib/actions/thread.actions"
+import { addCommentToThread, createThread } from "@/lib/actions/thread.actions"
 import { Input } from "../ui/input"
 import Image from "next/image"
 
@@ -39,14 +39,13 @@ export default function Comment({
 	})
 
 	async function onSubmit(values: z.infer<typeof CommentValidation>) {
-		// await createThread({
-		// 	text: values.thread,
-		// 	author: userId,
-		// 	communityId: null,
-		// 	path: pathname,
-		// })
-
-		router.push("/")
+		await addCommentToThread(
+			threadId,
+			values.thread,
+			JSON.parse(currentUserId),
+			pathname
+		)
+		form.reset()
 	}
 
 	return (
